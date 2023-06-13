@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AutAvAV1</string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="google_maps_key">AIzaSyCc53ViXq_xRlqdkMzwe05WsWJ-ivvI5Go"</string>
+</resources>
