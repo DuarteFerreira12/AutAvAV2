@@ -6,6 +6,7 @@
     android:layout_height="match_parent">
 
     <!--fragment to display our maps-->
+
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
@@ -31,7 +32,7 @@
         app:queryHint="Para onde?" />
 
     <Button
-        android:id="@+id/buttonRota"
+        android:id="@+id/buttonGenRoute"
         style="@style/Widget.AppCompat.Button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -44,7 +45,7 @@
         tools:visibility="visible" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/floatingActionButton"
+        android:id="@+id/buttonConfig"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
@@ -52,6 +53,7 @@
         android:layout_marginStart="10dp"
         android:layout_marginBottom="30dp"
         android:clickable="true"
+        android:visibility="invisible"
         app:backgroundTint="#CFCFCF"
         app:fabSize="mini"
         app:srcCompat="@android:drawable/ic_menu_manage" />
@@ -66,9 +68,153 @@
         android:layout_marginEnd="10dp"
         android:clickable="true"
         android:visibility="invisible"
-        app:backgroundTint="#1DE337"
+        app:backgroundTint="#00FF00"
         app:fabSize="mini"
         app:rippleColor="#FFFFFF"
         app:srcCompat="@android:drawable/ic_media_play" />
+
+    <LinearLayout
+        android:id="@+id/data_box"
+        android:layout_width="wrap_content"
+        android:layout_height="80dp"
+        android:layout_below="@+id/idSearchView"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="20dp"
+        android:layout_toStartOf="@+id/buttonStartRoute"
+        android:background="@color/white"
+        android:orientation="vertical"
+        android:visibility="invisible">
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:paddingLeft="2dp"
+            android:paddingTop="2dp"
+            android:text="Dados da Rota:" />
+
+        <LinearLayout
+            android:id="@+id/data"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="20dp"
+            android:background="@android:color/white"
+            android:orientation="horizontal"
+            android:padding="1dp"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/textDataDistance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Dist: " />
+
+                <TextView
+                    android:id="@+id/textDataTime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Tempo: " />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textDataSpeed"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Vel: " />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/data_box2"
+        android:layout_width="wrap_content"
+        android:layout_height="80dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="50dp"
+        android:layout_marginBottom="10dp"
+        android:background="@color/white"
+        android:orientation="vertical"
+        android:visibility="invisible">
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:paddingLeft="2dp"
+            android:paddingTop="2dp"
+            android:text="Dados até a chegada:" />
+
+        <LinearLayout
+            android:id="@+id/data2"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="20dp"
+            android:background="@android:color/white"
+            android:orientation="horizontal"
+            android:padding="1dp"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/textDataDistance2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Dist: " />
+
+                <TextView
+                    android:id="@+id/textDataTime2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Tempo: " />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textDataSpeed2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Vel: " />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/buttonAddDestination"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/idSearchView"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="0dp"
+        android:layout_marginEnd="10dp"
+        android:clickable="true"
+        android:visibility="invisible"
+        app:backgroundTint="#00B8D4"
+        app:fabSize="mini"
+        app:srcCompat="@android:drawable/ic_input_add" />
 
 </RelativeLayout>

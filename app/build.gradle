@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.autavav1'
+    namespace 'com.example.autavav2'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.example.autavav1"
+        applicationId "com.example.autavav2"
         minSdk 26
         targetSdk 33
         versionCode 1
@@ -40,6 +40,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.android.gms:play-services-location:21.0.1'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'org.ejml:ejml-simple:0.43'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'

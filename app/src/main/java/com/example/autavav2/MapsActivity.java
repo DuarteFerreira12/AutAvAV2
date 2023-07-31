@@ -1,15 +1,21 @@
-package com.example.autavav1;
+package com.example.autavav2;
 
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SearchView;
@@ -17,7 +23,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
-import com.example.autavav1.databinding.ActivityMapsBinding;
+import com.example.autavav2.databinding.ActivityMapsBinding;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -26,10 +32,13 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -47,11 +56,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
     private SearchView searchView;
-    private Button buttonRota;
-    private FloatingActionButton buttonStartRoute;
-    private FusedLocationProviderClient client;
+    private Button buttonGenRoute;
+    private FloatingActionButton buttonStartRoute, buttonConfig, buttonAddDestination;
+    private LinearLayout dataBox;
+    private LinearLayout dataBox2;
+    private TextView textDataDistance, textDataTime, textDataSpeed;
+    private TextView textDataDistance2, textDataTime2, textDataSpeed2;
+    private FusedLocationProviderClient fusedLocationClient;
     private LatLng origin, dest;
     private Localizacao localizacao;
+    private ColorStateList colorRed = new ColorStateList( new int[][]{ new int[]{} }, new int[]{ Color.RED } );
+    private ColorStateList colorGreen = new ColorStateList( new int[][]{ new int[]{} }, new int[]{ Color.GREEN } );
+    private DownloadTask downloadTask;
+    private String url;
+    private ArrayList<LatLng> points = null;
+    private PolylineOptions lineOptions = null;
+    private Polyline route;
+    private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,7 +81,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        client = LocationServices.getFusedLocationProviderClient(this);
+        // Initialize FusedLocationProviderClient
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         try {
             if (ContextCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -72,34 +94,87 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         searchView = findViewById(R.id.idSearchView);
         searchView.clearFocus();
-        buttonRota = findViewById(R.id.buttonRota);
+        buttonGenRoute = findViewById(R.id.buttonGenRoute);
         buttonStartRoute = findViewById(R.id.buttonStartRoute);
+        buttonAddDestination = findViewById(R.id.buttonAddDestination);
+        buttonConfig = findViewById(R.id.buttonConfig);
+        dataBox = findViewById(R.id.data_box);
+        dataBox2 = findViewById(R.id.data_box2);
+        textDataDistance = findViewById(R.id.textDataDistance);
+        textDataTime = findViewById(R.id.textDataTime);
+        textDataSpeed = findViewById(R.id.textDataSpeed);
+        textDataDistance2 = findViewById(R.id.textDataDistance2);
+        textDataTime2 = findViewById(R.id.textDataTime2);
+        textDataSpeed2 = findViewById(R.id.textDataSpeed2);
 
-        buttonRota.setOnClickListener(new View.OnClickListener() {
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+
+        buttonGenRoute.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                String url = getUrl(origin, dest, "driving");
+                url = getUrl(origin, dest, "driving");
 
-                DownloadTask downloadTask = new DownloadTask();
+                handler = new Handler(Looper.getMainLooper()) {
+                    @Override
+                    public void handleMessage(Message msg) {
+                        // Handle updates from the thread here
+                        String updateMessage = (String) msg.obj;
+                        if (updateMessage.equals("att")){
+                            textDataDistance2.setText(localizacao.printRemainingDistance());
+                            textDataTime2.setText(localizacao.printRemainingTime());
+                            textDataSpeed2.setText(localizacao.printAverageSpeed(true));
+                        } else if (updateMessage.equals("getDistance")) {
+                            new UpdateDistance().execute();
+                        }
+                    }
+                };
+                localizacao = new Localizacao(fusedLocationClient, mapFragment.getActivity(), handler);
+
+                downloadTask = new DownloadTask();
 
                 downloadTask.execute(url);
 
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(origin, 17));
-
+                buttonGenRoute.setVisibility(View.INVISIBLE);
                 buttonStartRoute.setVisibility(View.VISIBLE);
+                dataBox.setVisibility(View.VISIBLE);
             }
         });
 
         buttonStartRoute.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                localizacao.start();
+                if (buttonStartRoute.getBackgroundTintList() == colorRed){
+                    Snackbar.make(v, "Rota cancelada!", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                    localizacao.interrupt();
+                    buttonStartRoute.setVisibility(View.INVISIBLE);
+                    dataBox.setVisibility(View.INVISIBLE);
+                    dataBox2.setVisibility(View.INVISIBLE);
+                    textDataDistance.setText("Dist:");
+                    textDataTime.setText("Tempo:");
+                    buttonStartRoute.setBackgroundTintList(colorGreen);
+                    buttonStartRoute.setImageResource(android.R.drawable.ic_media_play);
+                    mMap.clear();
+                } else {
+                    //Snackbar.make(v, "Rota iniciada!", Snackbar.LENGTH_SHORT).setAction("Action", null).show();
+                    localizacao.start();
+                    buttonStartRoute.setBackgroundTintList(colorRed);
+                    buttonStartRoute.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+                    textDataDistance2.setText(localizacao.printRemainingDistance());
+                    textDataTime2.setText(localizacao.printRemainingTime());
+                    textDataSpeed2.setText(localizacao.printAverageSpeed(true));
+                    dataBox2.setVisibility(View.VISIBLE);
+                }
             }
         });
 
+        buttonAddDestination.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+            }
+        });
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -126,8 +201,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     mMap.addMarker(new MarkerOptions().position(dest).title(location));
 
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(dest, 17));
-
-                    buttonRota.setVisibility(View.VISIBLE);
+                    buttonStartRoute.setVisibility(View.INVISIBLE);
+                    dataBox.setVisibility(View.INVISIBLE);
+                    dataBox2.setVisibility(View.INVISIBLE);
+                    textDataDistance.setText("Dist:");
+                    textDataTime.setText("Tempo:");
+                    buttonGenRoute.setVisibility(View.VISIBLE);
+                    //buttonAddDestination.setVisibility(View.VISIBLE);
 
                 }
                 return false;
@@ -137,17 +217,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public boolean onQueryTextChange(String newText) {
                 mMap.clear();
-                buttonRota.setVisibility(View.INVISIBLE);
+                buttonGenRoute.setVisibility(View.INVISIBLE);
                 buttonStartRoute.setVisibility(View.INVISIBLE);
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(origin, 17));
+                dataBox.setVisibility(View.INVISIBLE);
+                dataBox2.setVisibility(View.INVISIBLE);
+                textDataDistance.setText("Dist:");
+                textDataTime.setText("Tempo:");
+                //mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(origin, 17));
                 return false;
             }
         });
 
         assert mapFragment != null;
         mapFragment.getMapAsync(this);
-
-        localizacao = new Localizacao(client, this);
 
     }
 
@@ -159,19 +241,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setMaxZoomPreference(20.0f);
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return;
         }
         mMap.setMyLocationEnabled(true);
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
 
-        client.getLastLocation()
+        fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(new OnSuccessListener<Location>() {
                     @Override
                     public void onSuccess(Location location) {
@@ -202,10 +277,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
-
         @Override
         protected String doInBackground(String... url) {
-
             String data = "";
 
             try {
@@ -223,7 +296,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             ParserTask parserTask = new ParserTask();
 
             parserTask.execute(result);
-
         }
     }
 
@@ -231,19 +303,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * A class to parse the Google Places in JSON format
      */
     private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
-
         // Parsing the data in non-ui thread
         @Override
         protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
-
             JSONObject jObject;
             List<List<HashMap<String, String>>> routes = null;
 
             try {
                 jObject = new JSONObject(jsonData[0]);
                 DirectionsJSONParser parser = new DirectionsJSONParser();
-
                 routes = parser.parse(jObject);
+
+                localizacao.setTotalDistance(parser.getDistance());
+                localizacao.setTotalTime(parser.getDuration());
+                localizacao.calculateAverageSpeed();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                textDataDistance.setText(localizacao.printTotalDistance());
+                textDataTime.setText(localizacao.printTotalTime());
+                textDataSpeed.setText(localizacao.printAverageSpeed(false));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -252,12 +332,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected void onPostExecute(List<List<HashMap<String, String>>> result) {
-            ArrayList points = null;
-            PolylineOptions lineOptions = null;
             MarkerOptions markerOptions = new MarkerOptions();
 
             for (int i = 0; i < result.size(); i++) {
-                points = new ArrayList();
+                points = new ArrayList<>();
                 lineOptions = new PolylineOptions();
 
                 List<HashMap<String, String>> path = result.get(i);
@@ -278,9 +356,33 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 lineOptions.geodesic(true);
 
             }
+            // Drawing polyline in the Google Map for the i-th route
+            route = mMap.addPolyline(lineOptions);
+        }
+    }
 
-// Drawing polyline in the Google Map for the i-th route
-            mMap.addPolyline(lineOptions);
+    private class UpdateDistance extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... strings) {
+            String url = getUrl(new LatLng(localizacao.getLatitude(),localizacao.getLongitude()), dest, "driving");
+            String urlJson = null;
+            JSONObject jObject = null;
+            try {
+                urlJson = downloadUrl(url);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                jObject = new JSONObject(urlJson);
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+            DirectionsJSONParser parser = new DirectionsJSONParser();
+            parser.parse(jObject);
+            Log.i("teste","" + parser.getDistance());
+            localizacao.setRemainingDistance(parser.getDistance());
+            localizacao.liberaProssiga();
+            return null;
         }
     }
 

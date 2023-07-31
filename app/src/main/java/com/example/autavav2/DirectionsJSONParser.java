@@ -1,4 +1,4 @@
-package com.example.autavav1;
+package com.example.autavav2;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -15,6 +15,8 @@ import java.util.List;
  */
 
 public class DirectionsJSONParser {
+    private int distance;
+    private int duration;
 
     /** Receives a JSONObject and returns a list of lists containing latitude and longitude */
     public List<List<HashMap<String,String>>> parse(JSONObject jObject){
@@ -33,8 +35,16 @@ public class DirectionsJSONParser {
                 jLegs = ( (JSONObject)jRoutes.get(i)).getJSONArray("legs");
                 List path = new ArrayList<HashMap<String, String>>();
 
+                JSONObject legObject = jLegs.getJSONObject(0);
+                JSONObject distanceObject = legObject.getJSONObject("distance");
+                distance = distanceObject.getInt("value");
+                JSONObject durationObject = legObject.getJSONObject("duration");
+                duration = durationObject.getInt("value");
+
+
                 /** Traversing all legs */
                 for(int j=0;j<jLegs.length();j++){
+
                     jSteps = ( (JSONObject)jLegs.get(j)).getJSONArray("steps");
 
                     /** Traversing all steps */
@@ -99,5 +109,13 @@ public class DirectionsJSONParser {
         }
 
         return poly;
+    }
+
+    public int getDistance() {
+        return distance;
+    }
+
+    public int getDuration() {
+        return duration;
     }
 }

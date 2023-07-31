@@ -1,4 +1,4 @@
-package com.example.autavav1;
+package com.example.autavav2;
 
 public class Data {
     private double latitude;
